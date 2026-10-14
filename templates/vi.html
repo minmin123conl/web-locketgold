@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ví Của Tôi - Locket Gold</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">LOCKET</span>
+                    <span class="logo-gold">GOLD</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="/" class="btn btn-secondary btn-sm">← Trang chủ</a>
+                <a href="/ho-tro" class="btn btn-secondary btn-sm">Hỗ trợ</a>
+                {% if user.is_admin %}
+                <a href="/admin" class="btn btn-secondary btn-sm">Quản trị</a>
+                {% endif %}
+                <a href="/dang-xuat" class="btn btn-secondary btn-sm">Đăng xuất</a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="wallet-grid">
+            <!-- Balance Card -->
+            <div class="card wallet-balance-card">
+                <div class="card-header">
+                    <div class="card-icon">💰</div>
+                    <div>
+                        <h2 class="card-title">Số Dư</h2>
+                        <p class="card-subtitle">Tài khoản của {{ user.username }}</p>
+                    </div>
+                </div>
+                <div class="balance-display">
+                    <div class="balance-amount">{{ "{:,.0f}".format(user.balance or 0) }}đ</div>
+                    <div class="balance-label">Số dư khả dụng</div>
+                </div>
+                <div class="credits-display">
+                    <div class="credits-count">{{ user.credits or 0 }}</div>
+                    <div class="credits-label">Lượt kích hoạt</div>
+                </div>
+            </div>
+
+            <!-- Topup Card -->
+            <div class="card wallet-action-card">
+                <div class="card-header">
+                    <div class="card-icon">💳</div>
+                    <div>
+                        <h2 class="card-title">Nạp Tiền</h2>
+                        <p class="card-subtitle">Nạp tiền vào ví để mua lượt</p>
+                    </div>
+                </div>
+                <div class="topup-options">
+                    <button class="topup-option" data-amount="10000">10.000đ</button>
+                    <button class="topup-option" data-amount="20000">20.000đ</button>
+                    <button class="topup-option" data-amount="50000">50.000đ</button>
+                    <button class="topup-option" data-amount="100000">100.000đ</button>
+                    <button class="topup-option" data-amount="200000">200.000đ</button>
+                    <button class="topup-option" data-amount="500000">500.000đ</button>
+                </div>
+                <div class="input-wrapper">
+                    <span class="input-icon">💵</span>
+                    <input type="number" id="topup-amount" placeholder="Hoặc nhập số tiền tùy chỉnh (tối thiểu 1.000đ)" min="1000" step="1000">
+                </div>
+                <button id="btn-topup" class="btn btn-primary btn-full">
+                    <span class="btn-icon">💳</span>
+                    <span class="btn-text">Nạp Tiền</span>
+                </button>
+                <div id="topup-result" class="result-box hidden"></div>
+            </div>
+
+            <!-- Buy Credit Card -->
+            <div class="card wallet-action-card">
+                <div class="card-header">
+                    <div class="card-icon">⚡</div>
+                    <div>
+                        <h2 class="card-title">Mua Lượt</h2>
+                        <p class="card-subtitle">Mua lượt kích hoạt Gold</p>
+                    </div>
+                </div>
+                <div class="credit-price">
+                    <div class="credit-price-value">{{ "{:,.0f}".format(CREDIT_PRICE) }}đ</div>
+                    <div class="credit-price-label">/ 1 lượt</div>
+                </div>
+                <button id="btn-buy-credit" class="btn btn-gold btn-full">
+                    <span class="btn-icon">⚡</span>
+                    <span class="btn-text">Mua 1 Lượt</span>
+                </button>
+                <div id="buy-credit-result" class="result-box hidden"></div>
+            </div>
+        </div>
+
+        <!-- Transactions Card -->
+        <div class="card transactions-card">
+            <div class="card-header">
+                <div class="card-icon">📋</div>
+                <div>
+                    <h2 class="card-title">Lịch Sử Giao Dịch</h2>
+                    <p class="card-subtitle">Các giao dịch gần đây</p>
+                </div>
+            </div>
+            <div class="transactions-list">
+                {% if transactions %}
+                    {% for tx in transactions %}
+                        <div class="transaction-item">
+                            <div class="transaction-icon">
+                                {% if tx.type == 'topup' %}💳
+                                {% elif tx.type == 'buy_credit' %}⚡
+                                {% elif tx.type == 'activate_gold' %}🏆
+                                {% else %}📝{% endif %}
+                            </div>
+                            <div class="transaction-info">
+                                <div class="transaction-desc">{{ tx.description or tx.type }}</div>
+                                <div class="transaction-date">{{ tx.created_at.strftime('%d/%m/%Y %H:%M') if tx.created_at else '' }}</div>
+                            </div>
+                            <div class="transaction-amount">
+                                {% if tx.type == 'topup' %}
+                                    <span class="amount-positive">+{{ "{:,.0f}".format(tx.amount or 0) }}đ</span>
+                                {% elif tx.type == 'buy_credit' %}
+                                    <span class="amount-negative">-{{ "{:,.0f}".format(tx.amount or 0) }}đ</span>
+                                {% else %}
+                                    <span class="amount-neutral">{{ tx.status }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="transaction-status status-{{ tx.status }}">{{ tx.status }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">Chưa có giao dịch nào.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>© 2026 Locket Gold Tool. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        const CSRF_TOKEN = "{{ csrf_token }}";
+    </script>
+    <script src="/static/wallet.js" data-credit-price="{{ CREDIT_PRICE }}"></script>
+</body>
+</html>

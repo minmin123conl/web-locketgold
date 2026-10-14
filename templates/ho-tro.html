@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hỗ Trợ - Locket Gold</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">LOCKET</span>
+                    <span class="logo-gold">GOLD</span>
+                </div>
+            </div>
+            <div class="header-badge">
+                <span class="pulse-dot"></span>
+                HỖ TRỢ
+            </div>
+        </header>
+
+        <div class="admin-nav">
+            <a href="/" class="admin-nav-link">← Trang chủ</a>
+            <a href="/vi" class="admin-nav-link">Ví</a>
+            {% if current_user and current_user.is_admin %}
+            <a href="/admin" class="admin-nav-link">Quản trị</a>
+            {% endif %}
+            <a href="/dang-xuat" class="admin-nav-link">Đăng xuất</a>
+        </div>
+
+        <div class="admin-container">
+            <h1 class="admin-title">Hỗ Trợ Khách Hàng</h1>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="support-grid">
+                <div class="support-form-card">
+                    <h2 class="support-card-title">Gửi yêu cầu hỗ trợ</h2>
+                    <form method="POST" action="/ho-tro">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+                        <div class="form-group">
+                            <label for="subject">Tiêu đề</label>
+                            <input type="text" id="subject" name="subject" class="form-control" placeholder="Ví dụ: Không kích hoạt được Gold" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Nội dung</label>
+                            <textarea id="message" name="message" class="form-control" rows="5" placeholder="Mô tả chi tiết vấn đề của bạn..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Gửi yêu cầu</button>
+                    </form>
+                </div>
+
+                <div class="support-tickets-card">
+                    <h2 class="support-card-title">Yêu cầu của bạn</h2>
+                    {% if tickets %}
+                        <div class="tickets-list">
+                            {% for ticket in tickets %}
+                                <div class="ticket-item">
+                                    <div class="ticket-header">
+                                        <span class="ticket-subject">{{ ticket.subject }}</span>
+                                        <span class="status-{{ ticket.status }}">{{ ticket.status }}</span>
+                                    </div>
+                                    <div class="ticket-message">{{ ticket.message }}</div>
+                                    {% if ticket.admin_reply %}
+                                        <div class="ticket-reply">
+                                            <strong>Phản hồi:</strong> {{ ticket.admin_reply }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="ticket-date">{{ ticket.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="empty-state">Bạn chưa có yêu cầu hỗ trợ nào.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>© 2026 Locket Gold Tool. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>

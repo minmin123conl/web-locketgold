@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locket Gold - Kích Hoạt Premium</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">LOCKET</span>
+                    <span class="logo-gold">GOLD</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                {% if current_user %}
+                    <a href="/vi" class="btn btn-secondary btn-sm">💰 Ví ({{ current_user.credits or 0 }} lượt)</a>
+                    <a href="/ho-tro" class="btn btn-secondary btn-sm">Hỗ trợ</a>
+                    {% if current_user.is_admin %}
+                    <a href="/admin" class="btn btn-secondary btn-sm">Quản trị</a>
+                    {% endif %}
+                    <a href="/dang-xuat" class="btn btn-secondary btn-sm">Đăng xuất</a>
+                {% else %}
+                    <a href="/dang-nhap" class="btn btn-secondary btn-sm">Đăng nhập</a>
+                    <a href="/dang-ky" class="btn btn-primary btn-sm">Đăng ký</a>
+                {% endif %}
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1 class="hero-title">Kích Hoạt <span class="gradient-text">Locket Gold</span></h1>
+            <p class="hero-subtitle">Nâng cấp tài khoản Locket của bạn lên gói Premium chỉ trong vài bước đơn giản</p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <div class="stat-value">100%</div>
+                    <div class="stat-label">Thành Công</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <div class="stat-value">1 Phút</div>
+                    <div class="stat-label">Kích Hoạt</div>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <div class="stat-value">24/7</div>
+                    <div class="stat-label">Hỗ Trợ</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Card -->
+        <div class="card main-card">
+            <div class="card-header">
+                <div class="card-icon">⚡</div>
+                <div>
+                    <h2 class="card-title">Bắt Đầu Kích Hoạt</h2>
+                    <p class="card-subtitle">Thực hiện theo 3 bước đơn giản bên dưới</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-bar">
+                <div class="progress-step active" data-step="1">
+                    <div class="progress-circle">1</div>
+                    <div class="progress-label">Nhập UID</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="2">
+                    <div class="progress-circle">2</div>
+                    <div class="progress-label">Kiểm Tra</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="3">
+                    <div class="progress-circle">3</div>
+                    <div class="progress-label">Kích Hoạt</div>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step" data-step="4">
+                    <div class="progress-circle">4</div>
+                    <div class="progress-label">Giữ Gold</div>
+                </div>
+            </div>
+
+            <!-- Step 1: Resolve UID -->
+            <div class="step-section active" id="step-1">
+                <div class="step-header">
+                    <span class="step-number">1</span>
+                    <div>
+                        <h3 class="step-title">Nhập Username / Link Locket</h3>
+                        <p class="step-desc">Nhập username hoặc link hồ sơ Locket của bạn</p>
+                    </div>
+                </div>
+                <div class="step-content">
+                    <div class="input-group">
+                        <div class="input-wrapper">
+                            <span class="input-icon">🔗</span>
+                            <input type="text" id="username" placeholder="Nhập username hoặc link Locket..." autocomplete="off">
+                        </div>
+                        <button id="btn-resolve" class="btn btn-primary">
+                            <span class="btn-icon">🔍</span>
+                            <span class="btn-text">Phân Giải UID</span>
+                        </button>
+                    </div>
+                    <div id="resolve-result" class="result-box hidden"></div>
+                </div>
+            </div>
+
+            <!-- Step 2: Check Status -->
+            <div class="step-section" id="step-2">
+                <div class="step-header">
+                    <span class="step-number">2</span>
+                    <div>
+                        <h3 class="step-title">Kiểm Tra Trạng Thái</h3>
+                        <p class="step-desc">Xem tài khoản đã có Gold chưa</p>
+                    </div>
+                </div>
+                <div class="step-content">
+                    <div id="status-result" class="result-box hidden"></div>
+                    <button id="btn-check-status" class="btn btn-secondary hidden">
+                        <span class="btn-icon">📊</span>
+                        <span class="btn-text">Kiểm Tra Trạng Thái</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Inject Gold -->
+            <div class="step-section" id="step-3">
+                <div class="step-header">
+                    <span class="step-number">3</span>
+                    <div>
+                        <h3 class="step-title">Kích Hoạt Gold</h3>
+                        <p class="step-desc">Tiến hành nâng cấp tài khoản lên Premium</p>
+                    </div>
+                </div>
+                <div class="step-content">
+                    <button id="btn-inject" class="btn btn-gold hidden">
+                        <span class="btn-icon">⚡</span>
+                        <span class="btn-text">Kích Hoạt Gold Ngay</span>
+                    </button>
+                    <div id="inject-result" class="result-box hidden"></div>
+                </div>
+            </div>
+
+            <!-- Step 4: Keep Gold -->
+            <div class="step-section" id="step-4">
+                <div class="step-header">
+                    <span class="step-number">4</span>
+                    <div>
+                        <h3 class="step-title">Giữ Gold Vĩnh Viễn</h3>
+                        <p class="step-desc">Tải cấu hình để tránh mất Gold</p>
+                    </div>
+                </div>
+                <div class="step-content">
+                    <div id="keep-gold-result" class="result-box hidden"></div>
+                    <div id="keep-gold-content" class="keep-gold-content hidden">
+                        <div class="keep-gold-card">
+                            <div class="keep-gold-icon">📱</div>
+                            <div class="keep-gold-info">
+                                <h4>Hướng Dẫn Giữ Gold</h4>
+                                <ol class="keep-gold-steps">
+                                    <li>Tải file cấu hình <strong>locketgold_novpn.mobileconfig</strong></li>
+                                    <li>Cài đặt profile trên iPhone/iPad</li>
+                                    <li>Vào <strong>Cài Đặt → Cài Đặt Hồ Sơ</strong> và cài đặt</li>
+                                    <li>Bật <strong>DNS</strong> trong cài đặt profile</li>
+                                    <li>Gold sẽ được giữ vĩnh viễn!</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <a href="/download/mobileconfig" class="btn btn-download" download>
+                            <span class="btn-icon">⬇️</span>
+                            <span class="btn-text">Tải File Cấu Hình</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Config Info Card -->
+        <div class="card config-card">
+            <div class="card-header">
+                <div class="card-icon">⚙️</div>
+                <div>
+                    <h2 class="card-title">Thông Tin Cấu Hình</h2>
+                    <p class="card-subtitle">Trạng thái hệ thống hiện tại</p>
+                </div>
+            </div>
+            <div id="config-info" class="config-info">
+                <div class="loading">Đang tải thông tin...</div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2026 Locket Gold Tool. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        const CSRF_TOKEN = "{{ csrf_token }}";
+    </script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

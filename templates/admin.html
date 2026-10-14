@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Trị - Locket Gold</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">LOCKET</span>
+                    <span class="logo-gold">GOLD</span>
+                </div>
+            </div>
+            <div class="header-badge">
+                <span class="pulse-dot"></span>
+                ADMIN PANEL
+            </div>
+        </header>
+
+        <div class="admin-nav">
+            <a href="/" class="admin-nav-link">← Trang chủ</a>
+            <a href="/vi" class="admin-nav-link">Ví</a>
+            <a href="/ho-tro" class="admin-nav-link">Hỗ trợ</a>
+            <a href="/dang-xuat" class="admin-nav-link">Đăng xuất</a>
+        </div>
+
+        <div class="admin-container">
+            <h1 class="admin-title">Quản Trị Hệ Thống</h1>
+
+            <!-- Stats -->
+            <div class="admin-stats" id="admin-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="stat-users">0</div>
+                        <div class="stat-label">Người dùng</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="stat-revenue">0đ</div>
+                        <div class="stat-label">Doanh thu</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="stat-transactions">0</div>
+                        <div class="stat-label">Giao dịch</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="stat-gold-orders">0</div>
+                        <div class="stat-label">Kích hoạt Gold</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎫</div>
+                    <div class="stat-info">
+                        <div class="stat-value" id="stat-tickets">0</div>
+                        <div class="stat-label">Yêu cầu hỗ trợ</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="users">Người dùng</button>
+                <button class="admin-tab" data-tab="transactions">Giao dịch</button>
+                <button class="admin-tab" data-tab="gold-orders">Kích hoạt Gold</button>
+                <button class="admin-tab" data-tab="tickets">Hỗ trợ</button>
+            </div>
+
+            <!-- Users Tab -->
+            <div class="admin-tab-content active" id="tab-users">
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Số dư</th>
+                                <th>Lượt</th>
+                                <th>Admin</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Transactions Tab -->
+            <div class="admin-tab-content" id="tab-transactions">
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User ID</th>
+                                <th>Loại</th>
+                                <th>Số tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Mô tả</th>
+                                <th>Ngày tạo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Gold Orders Tab -->
+            <div class="admin-tab-content" id="tab-gold-orders">
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User ID</th>
+                                <th>UID</th>
+                                <th>Trạng thái</th>
+                                <th>Ngày tạo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gold-orders-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tickets Tab -->
+            <div class="admin-tab-content" id="tab-tickets">
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User ID</th>
+                                <th>Tiêu đề</th>
+                                <th>Nội dung</th>
+                                <th>Trạng thái</th>
+                                <th>Phản hồi</th>
+                                <th>Ngày tạo</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tickets-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>© 2026 Locket Gold Tool. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        const CSRF_TOKEN = "{{ csrf_token }}";
+
+        // ═══════════════════════════════════════════
+        // LOAD STATS
+        // ═══════════════════════════════════════════
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/admin/stats');
+                const data = await res.json();
+                if (data.ok) {
+                    document.getElementById('stat-users').textContent = data.stats.total_users;
+                    document.getElementById('stat-revenue').textContent = formatVND(data.stats.total_revenue);
+                    document.getElementById('stat-transactions').textContent = data.stats.total_transactions;
+                    document.getElementById('stat-gold-orders').textContent = data.stats.total_gold_orders;
+                    document.getElementById('stat-tickets').textContent = data.stats.total_tickets;
+                }
+            } catch (e) {
+                console.error('Lỗi tải stats:', e);
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // LOAD USERS
+        // ═══════════════════════════════════════════
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/admin/users');
+                const data = await res.json();
+                if (data.ok) {
+                    const tbody = document.getElementById('users-table-body');
+                    tbody.innerHTML = '';
+                    data.users.forEach(user => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${escapeHtml(user.username)}</td>
+                            <td>${escapeHtml(user.email)}</td>
+                            <td>${formatVND(user.balance)}</td>
+                            <td>${user.credits}</td>
+                            <td>${user.is_admin ? '✅' : '❌'}</td>
+                            <td>${user.is_active ? '🟢' : '🔴'}</td>
+                            <td>${formatDate(user.created_at)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="toggleUserActive(${user.id}, ${!user.is_active})">
+                                    ${user.is_active ? 'Khóa' : 'Mở khóa'}
+                                </button>
+                                <button class="btn btn-sm btn-secondary" onclick="toggleUserAdmin(${user.id}, ${!user.is_admin})">
+                                    ${user.is_admin ? 'Bỏ admin' : 'Set admin'}
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error('Lỗi tải users:', e);
+            }
+        }
+
+        async function toggleUserActive(userId, isActive) {
+            await updateUser(userId, { is_active: isActive });
+        }
+
+        async function toggleUserAdmin(userId, isAdmin) {
+            await updateUser(userId, { is_admin: isAdmin });
+        }
+
+        async function updateUser(userId, data) {
+            try {
+                const res = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': CSRF_TOKEN,
+                    },
+                    body: JSON.stringify(data),
+                });
+                const result = await res.json();
+                if (result.ok) {
+                    loadUsers();
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra.');
+                }
+            } catch (e) {
+                console.error('Lỗi cập nhật user:', e);
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // LOAD TRANSACTIONS
+        // ═══════════════════════════════════════════
+        async function loadTransactions() {
+            try {
+                const res = await fetch('/api/admin/transactions');
+                const data = await res.json();
+                if (data.ok) {
+                    const tbody = document.getElementById('transactions-table-body');
+                    tbody.innerHTML = '';
+                    data.transactions.forEach(tx => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${tx.id}</td>
+                            <td>${tx.user_id}</td>
+                            <td>${escapeHtml(tx.type)}</td>
+                            <td>${formatVND(tx.amount)}</td>
+                            <td><span class="status-${tx.status}">${escapeHtml(tx.status)}</span></td>
+                            <td>${escapeHtml(tx.description || '')}</td>
+                            <td>${formatDate(tx.created_at)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error('Lỗi tải transactions:', e);
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // LOAD GOLD ORDERS
+        // ═══════════════════════════════════════════
+        async function loadGoldOrders() {
+            try {
+                const res = await fetch('/api/admin/gold-orders');
+                const data = await res.json();
+                if (data.ok) {
+                    const tbody = document.getElementById('gold-orders-table-body');
+                    tbody.innerHTML = '';
+                    data.orders.forEach(order => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${order.id}</td>
+                            <td>${order.user_id}</td>
+                            <td>${escapeHtml(order.uid)}</td>
+                            <td><span class="status-${order.status}">${escapeHtml(order.status)}</span></td>
+                            <td>${formatDate(order.created_at)}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error('Lỗi tải gold orders:', e);
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // LOAD TICKETS
+        // ═══════════════════════════════════════════
+        async function loadTickets() {
+            try {
+                const res = await fetch('/api/admin/tickets');
+                const data = await res.json();
+                if (data.ok) {
+                    const tbody = document.getElementById('tickets-table-body');
+                    tbody.innerHTML = '';
+                    data.tickets.forEach(ticket => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${ticket.id}</td>
+                            <td>${ticket.user_id}</td>
+                            <td>${escapeHtml(ticket.subject)}</td>
+                            <td>${escapeHtml(ticket.message)}</td>
+                            <td><span class="status-${ticket.status}">${escapeHtml(ticket.status)}</span></td>
+                            <td>${escapeHtml(ticket.admin_reply || '')}</td>
+                            <td>${formatDate(ticket.created_at)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="replyTicket(${ticket.id})">Phản hồi</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error('Lỗi tải tickets:', e);
+            }
+        }
+
+        async function replyTicket(ticketId) {
+            const reply = prompt('Nhập phản hồi:');
+            if (reply === null) return;
+            try {
+                const res = await fetch(`/api/admin/tickets/${ticketId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': CSRF_TOKEN,
+                    },
+                    body: JSON.stringify({ admin_reply: reply, status: 'resolved' }),
+                });
+                const result = await res.json();
+                if (result.ok) {
+                    loadTickets();
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra.');
+                }
+            } catch (e) {
+                console.error('Lỗi phản hồi ticket:', e);
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // TABS
+        // ═══════════════════════════════════════════
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ═══════════════════════════════════════════
+        // HELPERS
+        // ═══════════════════════════════════════════
+        function formatVND(amount) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount || 0);
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ═══════════════════════════════════════════
+        // INIT
+        // ═══════════════════════════════════════════
+        loadStats();
+        loadUsers();
+        loadTransactions();
+        loadGoldOrders();
+        loadTickets();
+    </script>
+</body>
+</html>
