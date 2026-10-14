@@ -19,13 +19,23 @@ logger = logging.getLogger(__name__)
 
 
 def _signature(data: dict) -> str:
-    """Tạo signature theo chuẩn payOS: HMAC-SHA256 của chuỗi query string."""
-    # Sắp xếp key theo alphabet, bỏ key rỗng
-    sorted_data = {k: str(v) for k, v in sorted(data.items()) if v not in (None, "")}
-    query_string = urllib.parse.urlencode(sorted_data)
+    """Tạo signature theo chuẩn payOS.
+
+    PayOS SDK dùng `create_signature_of_payment_request`:
+    - Thứ tự field cố định: amount, cancelUrl, description, orderCode, returnUrl
+    - Không URL-encode giá trị
+    - Nối bằng dấu &
+    """
+    required_fields = ["amount", "cancelUrl", "description", "orderCode", "returnUrl"]
+    values = []
+    for field in required_fields:
+        if field not in data:
+            return ""
+        values.append(f"{field}={data[field]}")
+    data_string = "&".join(values)
     return hmac.new(
         PAYOS_CHECKSUM_KEY.encode("utf-8"),
-        query_string.encode("utf-8"),
+        data_string.encode("utf-8"),
         hashlib.sha256,
     ).hexdigest()
 
@@ -40,9 +50,10 @@ def create_payment_link(order_code: str, amount: int, description: str, return_u
     if not is_configured():
         return None, "Chưa cấu hình payOS. Vui lòng bổ sung API key."
 
+    # PayOS yêu cầu orderCode là số nguyên (int), không phải chuỗi
     data = {
-        "orderCode": order_code,
-        "amount": amount,
+        "orderCode": int(order_code),
+        "amount": int(amount),
         "description": description,
         "returnUrl": return_url,
         "cancelUrl": cancel_url,

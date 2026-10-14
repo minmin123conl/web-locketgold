@@ -8,7 +8,12 @@ from database import Transaction, User, db
 
 def create_topup_transaction(user_id, amount):
     """Tạo transaction nạp tiền (pending)."""
-    order_code = f"TOPUP-{uuid.uuid4().hex[:16].upper()}"
+    # PayOS yêu cầu orderCode là số nguyên dương, tối đa 10 chữ số
+    import random
+    order_code = str(random.randint(1000000000, 9999999999))
+    # Đảm bảo unique trong database
+    while Transaction.query.filter_by(order_code=order_code).first():
+        order_code = str(random.randint(1000000000, 9999999999))
     tx = Transaction(
         user_id=user_id,
         type="topup",

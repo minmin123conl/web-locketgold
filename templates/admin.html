@@ -235,6 +235,8 @@
                                 <button class="btn btn-sm btn-secondary" onclick="toggleUserAdmin(${user.id}, ${!user.is_admin})">
                                     ${user.is_admin ? 'Bỏ admin' : 'Set admin'}
                                 </button>
+                                <button class="btn btn-sm btn-success" onclick="addCredits(${user.id})">+Lượt</button>
+                                <button class="btn btn-sm btn-danger" onclick="removeCredits(${user.id})">-Lượt</button>
                             </td>
                         `;
                         tbody.appendChild(tr);
@@ -251,6 +253,48 @@
 
         async function toggleUserAdmin(userId, isAdmin) {
             await updateUser(userId, { is_admin: isAdmin });
+        }
+
+        async function addCredits(userId) {
+            const amount = prompt('Nhập số lượt cần thêm:');
+            if (amount === null) return;
+            const credits = parseInt(amount);
+            if (isNaN(credits) || credits <= 0) {
+                alert('Số lượt không hợp lệ.');
+                return;
+            }
+            const user = await getUser(userId);
+            if (user) {
+                await updateUser(userId, { credits: (user.credits || 0) + credits });
+            }
+        }
+
+        async function removeCredits(userId) {
+            const amount = prompt('Nhập số lượt cần trừ:');
+            if (amount === null) return;
+            const credits = parseInt(amount);
+            if (isNaN(credits) || credits <= 0) {
+                alert('Số lượt không hợp lệ.');
+                return;
+            }
+            const user = await getUser(userId);
+            if (user) {
+                const newCredits = Math.max(0, (user.credits || 0) - credits);
+                await updateUser(userId, { credits: newCredits });
+            }
+        }
+
+        async function getUser(userId) {
+            try {
+                const res = await fetch('/api/admin/users');
+                const data = await res.json();
+                if (data.ok) {
+                    return data.users.find(u => u.id === userId);
+                }
+            } catch (e) {
+                console.error('Lỗi lấy user:', e);
+            }
+            return null;
         }
 
         async function updateUser(userId, data) {
@@ -352,6 +396,10 @@
                             <td>${formatDate(ticket.created_at)}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary" onclick="replyTicket(${ticket.id})">Phản hồi</button>
+                                <button class="btn btn-sm btn-secondary" onclick="changeTicketStatus(${ticket.id}, 'open')">Mở</button>
+                                <button class="btn btn-sm btn-secondary" onclick="changeTicketStatus(${ticket.id}, 'in_progress')">Đang xử lý</button>
+                                <button class="btn btn-sm btn-success" onclick="changeTicketStatus(${ticket.id}, 'resolved')">Đã xử lý</button>
+                                <button class="btn btn-sm btn-danger" onclick="changeTicketStatus(${ticket.id}, 'closed')">Đóng</button>
                             </td>
                         `;
                         tbody.appendChild(tr);
@@ -382,6 +430,27 @@
                 }
             } catch (e) {
                 console.error('Lỗi phản hồi ticket:', e);
+            }
+        }
+
+        async function changeTicketStatus(ticketId, status) {
+            try {
+                const res = await fetch(`/api/admin/tickets/${ticketId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': CSRF_TOKEN,
+                    },
+                    body: JSON.stringify({ status: status }),
+                });
+                const result = await res.json();
+                if (result.ok) {
+                    loadTickets();
+                } else {
+                    alert(result.error || 'Có lỗi xảy ra.');
+                }
+            } catch (e) {
+                console.error('Lỗi đổi trạng thái ticket:', e);
             }
         }
 

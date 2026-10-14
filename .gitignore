@@ -3,3 +3,95 @@ __pycache__/
 instance/
 *.db
 .env
+.env.*
+!*.example
+token*.txt
+*_token.txt
+*_login.json
+*_sa.json
+oauth_refresh.json
+gdrive_token.txt
+
+# Logs
+*.log
+logs/
+
+# Generated/transient files
+.idx/
+.pdf_work/
+output/
+*.tmp
+*.bak
+
+# Moon state data (contains sensitive info)
+moon_state/creds/
+moon_state/logs/
+moon_state/*.json
+moon_state/*.csv
+moon_state/*.bak
+moon_state/.env_marker_A
+moon_state/bin/
+
+# Locket gold - embedded git repo, don't include
+locket-gold/
+
+# Gemini results
+gemini_results.csv
+gemini_activation_links.txt
+OAUTH_LINK.txt
+
+# Tesseract traineddata (large files)
+*.traineddata
+
+# Web DGNL - embedded git repo, don't include
+web-dgnl/
+
+# Sensitive files - NEVER commit
+.env
+.env.*
+*.env
+*.pem
+*.key
+*.crt
+*.mobileconfig
+*.traineddata
+*.bak
+*.db
+*.sqlite
+*.sqlite3
+creds/
+credentials/
+secrets/
+oauth_*.txt
+oauth_*.json
+*_token.txt
+*_login.json
+*_sa.json
+*_refresh.json
+gemini_activation_links.txt
+gemini_results.csv
+OAUTH_LINK.txt
+
+# Local runtime data
+output/
+logs/
+*.log
+nohup.out
+
+# Web-locketgold sensitive
+web-locketgold/.env
+web-locketgold/*.db
+web-locketgold/*.sqlite
+web-locketgold/*.sqlite3
+
+# Moon state sensitive
+moon_state/creds/
+moon_state/logs/
+moon_state/*.json.bak
+moon_state/.env_marker_*
+
+# Locket-gold sensitive
+locket-gold/*.key
+locket-gold/*.crt
+locket-gold/*.mobileconfig
+locket-gold/*.service
