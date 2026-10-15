@@ -1,4 +1,4 @@
-# web-locketgold — Web Tool Kích Hoạt Locket Gold
+p# web-locketgold — Web Tool Kích Hoạt Locket Gold
 
 Web tool kết hợp cơ chế từ `locketgold.py` (inject receipt) và phần server/config từ `server.js` + `rc_fake_worker.js` + `mobileconfig` để kích hoạt và giữ Gold.
 
