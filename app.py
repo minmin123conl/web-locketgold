@@ -23,7 +23,7 @@ from config import (
     SECRET_KEY, CREDIT_PRICE, SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE,
     SESSION_COOKIE_SECURE, PERMANENT_SESSION_LIFETIME,
     RATE_LIMIT_LOGIN, RATE_LIMIT_REGISTER, RATE_LIMIT_INJECT,
-    RATE_LIMIT_RESOLVE, RATE_LIMIT_TOPUP,
+    RATE_LIMIT_RESOLVE, RATE_LIMIT_TOPUP, INSTANCE_PATH, IS_VERCEL,
 )
 from database import db, init_db, User, Transaction, GoldOrder, SupportTicket
 from auth import login_required, admin_required, get_current_user, register_user, login_user
@@ -44,7 +44,11 @@ import payos
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOCKET_GOLD_DIR = os.path.join(os.path.dirname(HERE), "locket-gold")
 
-app = Flask(__name__)
+# Trên Vercel filesystem là read-only (/var/task). Flask mặc định dùng
+# thư mục ./instance để lưu file tạm, gây lỗi khi db.init_app() cố tạo nó.
+# => Trỏ instance_path vào /tmp (thư mục ghi được duy nhất trên Vercel).
+app = Flask(__name__, instance_path=os.path.abspath(INSTANCE_PATH))
+os.makedirs(app.instance_path, exist_ok=True)
 app.config["JSON_AS_ASCII"] = False
 app.config["SECRET_KEY"] = SECRET_KEY
 app.config["SESSION_COOKIE_HTTPONLY"] = SESSION_COOKIE_HTTPONLY

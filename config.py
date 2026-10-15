@@ -3,11 +3,30 @@
 import os
 
 # ════════════════════════════════════════════════════════════════════
+# MÔI TRƯỜNG CHẠY
+# ════════════════════════════════════════════════════════════════════
+# Vercel cung cấp biến môi trường VERCEL=1 khi chạy serverless.
+# Trên Vercel filesystem là READ-ONLY, chỉ /tmp là ghi được.
+IS_VERCEL = bool(os.environ.get("VERCEL"))
+
+# Thư mục instance (Flask dùng để lưu file tạm, SQLite mặc định).
+# Trên Vercel bắt buộc phải nằm trong /tmp, nếu không sẽ lỗi
+# "OSError: [Errno 30] Read-only file system: '/var/task/instance'".
+INSTANCE_PATH = os.environ.get(
+    "INSTANCE_PATH",
+    "/tmp/instance" if IS_VERCEL else "instance",
+)
+
+# ════════════════════════════════════════════════════════════════════
 # DATABASE (PostgreSQL hoặc SQLite cho local test)
 # ════════════════════════════════════════════════════════════════════
+# LƯU Ý: nên đặt biến môi trường DATABASE_URL (PostgreSQL) trên Vercel
+# để dữ liệu được lưu vĩnh viễn. SQLite chỉ là fallback (trên Vercel
+# dữ liệu sẽ mất sau mỗi lần cold start vì /tmp là tạm thời).
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "sqlite:///locketgold.db"  # fallback SQLite nếu không có PostgreSQL
+    # 4 dấu / = đường dẫn tuyệt đối (/tmp/...); 3 dấu / = tương đối
+    "sqlite:////tmp/locketgold.db" if IS_VERCEL else "sqlite:///locketgold.db",
 )
 
 # ════════════════════════════════════════════════════════════════════
