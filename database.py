@@ -190,11 +190,27 @@ def _migrate_schema():
             db.session.commit()
 
 
-def init_db(app):
-    """Khởi tạo database connection và tạo bảng nếu chưa có."""
+def init_db_app(app):
+    """Gắn SQLAlchemy vào Flask app (SETUP thuần, không network I/O).
+
+    An toàn để gọi ở cấp module / lúc import: Vercel import entrypoint
+    trong lúc BUILD để tìm WSGI app. Nếu gọi network I/O ở đây (ví dụ
+    create_all), build sẽ crash -> FUNCTION_INVOCATION_FAILED.
+    """
     app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     db.init_app(app)
+
+
+def init_db_data(app):
+    """Tạo bảng, migrate schema và tạo admin mặc định (network I/O).
+
+    Chỉ gọi khi thực sự cần (request đầu tiên), không gọi lúc import.
+    Lỗi DB sẽ được route /healthz báo cáo cụ thể.
+
+    Nhận `app` trực tiếp (không dựa vào `db.app` — vài bản Flask-SQLAlchemy
+    không set `db.app` khi dùng cú pháp init_app).
+    """
     with app.app_context():
         db.create_all()
         # Migration schema cho database cũ
@@ -212,3 +228,9 @@ def init_db(app):
             admin.set_password(ADMIN_PASSWORD)
             db.session.add(admin)
             db.session.commit()
+
+
+# Backward-compat: giữ hàm cũ cho code/test khác vẫn gọi init_db(app)
+def init_db(app):
+    init_db_app(app)
+    init_db_data(app)

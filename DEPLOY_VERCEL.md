@@ -52,31 +52,47 @@ Trong Vercel Dashboard → Project → **Settings** → **Environment Variables*
 
 ## Bước 4: Cấu hình Vercel
 
-File `vercel.json` đã được tạo sẵn:
+File `vercel.json` đã được tạo sẵn (dùng **Python native runtime**, không cần legacy `builds`):
 ```json
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
+      "source": "/(.*)",
+      "destination": "/api/index"
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/index.py"
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12",
+      "maxDuration": 60,
+      "includeFiles": "templates/**,static/**"
     }
-  ]
+  }
 }
 ```
+
+Ghi chú:
+- `runtime: python3.12` — pin phiên bản Python (khớp với `.python-version`).
+- `includeFiles: templates/**,static/**` — đảm bảo Jinja templates và static files được đóng gói khi build.
+- File `.vercelignore` giúp **KHÔNG upload** các file nhạy cảm lên Vercel khi `vercel --prod` (key, cert, mobileconfig, creds, .env, moon_state/...).
 
 ## Bước 5: Kiểm tra sau deploy
 
 Sau khi deploy thành công:
 1. Mở URL: `https://web-locketgold.vercel.app`
-2. Đăng nhập admin: `/admin` (dùng `ADMIN_USERNAME` / `ADMIN_PASSWORD`)
-3. Kiểm tra các trang:
+2. **Kiểm tra `/healthz` trước** — đường dẫn chẩn đoán trả về JSON:
+   ```json
+   {
+     "ok": true,
+     "db_initialized": true,
+     "db_error": null,
+     "db_backend": "postgresql",
+     "is_vercel": true
+   }
+   ```
+   Nếu `ok: false`, đọc `db_error` để biết nguyên nhân thật (thay vì chỉ thấy `FUNCTION_INVOCATION_FAILED`).
+3. Đăng nhập admin: `/admin` (dùng `ADMIN_USERNAME` / `ADMIN_PASSWORD`)
+4. Kiểm tra các trang:
    - `/` - Trang chủ
    - `/dang-ky` - Đăng ký
    - `/dang-nhap` - Đăng nhập
@@ -98,6 +114,15 @@ Sau khi deploy thành công:
 - Kiểm tra `api/index.py` có đúng đường dẫn import
 - Đảm bảo `app.py` nằm cùng cấp với `api/`
 
+### Lỗi: `500 FUNCTION_INVOCATION_FAILED` trên MỌI request
+- **Nguyên nhân đã sửa**: trước đây `app.py` gọi `init_db(app)` ở cấp module (lúc **import**). Vercel import entrypoint trong lúc build để tìm WSGI app; nếu lúc đó DB không kết nối được (network bị chặn, Neon chậm, hoặc `DATABASE_URL` còn tham số `?channel_binding=require`), import sẽ ném exception → function không build được → mọi request lỗi 500.
+- **Cách sửa (đã áp dụng)**: DB init được trì hoãn tới request đầu tiên (`before_request`) và bọc `try/except`. Không còn lỗi lúc import/build.
+- **Chẩn đoán sau khi fix**: mở `/healthz` để xem `db_error` cụ thể nếu vẫn lỗi.
+
+### Lỗi: `invalid connection option "channel_binding"`
+- Neon tự thêm `?channel_binding=require` vào connection string, nhưng libpq của `psycopg2-binary` trên Vercel có thể không hỗ trợ.
+- `config.py` đã tự động **loại bỏ** tham số `channel_binding` khỏi `DATABASE_URL` — không cần sửa tay.
+
 ### Lỗi: `sqlite3.OperationalError: unable to open database file`
 - Vercel không hỗ trợ SQLite
 - Cấu hình `DATABASE_URL` trỏ đến PostgreSQL
@@ -105,3 +130,7 @@ Sau khi deploy thành công:
 ### Lỗi: `psycopg2.OperationalError`
 - Kiểm tra `DATABASE_URL` đúng định dạng
 - Đảm bảo database đã được tạo
+
+### Lỗi: Thiếu template/static (404 trang HTML)
+- Bảo đảm `vercel.json` có `"includeFiles": "templates/**,static/**"` như ở Bước 4
+- Có thể deploy lại sau khi sửa `vercel.json`

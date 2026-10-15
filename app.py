@@ -24,8 +24,9 @@ from config import (
     SESSION_COOKIE_SECURE, PERMANENT_SESSION_LIFETIME,
     RATE_LIMIT_LOGIN, RATE_LIMIT_REGISTER, RATE_LIMIT_INJECT,
     RATE_LIMIT_RESOLVE, RATE_LIMIT_TOPUP, INSTANCE_PATH, IS_VERCEL,
+    DATABASE_URL,
 )
-from database import db, init_db, User, Transaction, GoldOrder, SupportTicket
+from database import db, init_db_app, init_db_data, User, Transaction, GoldOrder, SupportTicket
 from auth import login_required, admin_required, get_current_user, register_user, login_user
 from wallet import (
     create_topup_transaction,
@@ -55,7 +56,37 @@ app.config["SESSION_COOKIE_HTTPONLY"] = SESSION_COOKIE_HTTPONLY
 app.config["SESSION_COOKIE_SAMESITE"] = SESSION_COOKIE_SAMESITE
 app.config["SESSION_COOKIE_SECURE"] = SESSION_COOKIE_SECURE
 app.config["PERMANENT_SESSION_LIFETIME"] = PERMANENT_SESSION_LIFETIME
-init_db(app)
+
+# ════════════════════════════════════════════════════════════════════
+# DB SETUP @ IMPORT (quan trọng cho Vercel)
+# ════════════════════════════════════════════════════════════════════
+# - init_db_app(app): CHỈ gắn SQLAlchemy vào app (thuần tuý setup, không
+#   network I/O) -> AN TOÀN gọi ở cấp module. Vercel import entrypoint
+#   lúc BUILD để tìm WSGI app nên không được làm network I/O ở đây.
+# - init_db_data(): create_all/migrate/tạo admin (network I/O) -> chỉ gọi
+#   ở request đầu tiên, bọc try/except để không sập toàn bộ function.
+init_db_app(app)
+
+_db_initialized = False
+_db_init_error = None
+
+
+def _ensure_db():
+    """Khởi tạo bảng/migrate DB đúng 1 lần, ở request đầu tiên."""
+    global _db_initialized, _db_init_error
+    if _db_initialized:
+        return
+    try:
+        init_db_data(app)
+        _db_initialized = True
+    except Exception as e:  # không để sập toàn bộ function
+        _db_init_error = f"{type(e).__name__}: {e}"
+        app.logger.exception("init_db_data failed")
+
+
+@app.before_request
+def _lazy_init_db():
+    _ensure_db()
 
 # ════════════════════════════════════════════════════════════════════
 # SECURITY: Apply headers to all responses
@@ -289,6 +320,25 @@ def api_config():
         "has_hash_params": bool(TOKEN_CONFIG.get("hash_params")),
         "has_hash_headers": bool(TOKEN_CONFIG.get("hash_headers")),
     })
+
+
+@app.route("/healthz", methods=["GET"])
+def healthz():
+    """Chẩn đoán: cho biết DB đã init chưa và backend đang dùng.
+
+    Mở /healthz để thấy lỗi thật thay vì chỉ nhận FUNCTION_INVOCATION_FAILED.
+    """
+    _ensure_db()
+    from config import DATABASE_URL as _DB
+    info = {
+        "ok": _db_init_error is None,
+        "db_initialized": _db_initialized,
+        "db_error": _db_init_error,
+        "db_backend": _DB.split(":", 1)[0] if _DB else None,
+        "is_vercel": IS_VERCEL,
+    }
+    status = 200 if _db_init_error is None else 500
+    return jsonify(info), status
 
 
 # ════════════════════════════════════════════════════════════════════
