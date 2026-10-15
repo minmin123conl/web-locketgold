@@ -45,6 +45,22 @@ def _normalize_db_url(url):
     if url.startswith("postgres://"):
         url = "postgresql://" + url[len("postgres://"):]
 
+    # Ép driver psycopg2 cho mọi URL PostgreSQL.
+    # requirements.txt chỉ cài "psycopg2-binary", KHÔNG cài "psycopg" (v3).
+    # Neon/Supabase đôi khi trả URL dạng "postgresql+psycopg://" (psycopg v3).
+    # Flask-SQLAlchemy gọi create_engine() ngay trong init_app() lúc import,
+    # nên SQLAlchemy cố "import psycopg" -> ModuleNotFoundError làm function
+    # crash lúc khởi động (FUNCTION_INVOCATION_FAILED / Runtime.ExitError).
+    prefix = "postgresql"
+    if url.startswith(prefix):
+        rest = url[len(prefix):]
+        if rest.startswith("+"):
+            cut = rest.find("://")
+            if cut != -1:
+                rest = rest[cut:]
+        if rest.startswith("://"):
+            url = prefix + "+psycopg2" + rest
+
     if "channel_binding" in url:
         from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
         parts = urlsplit(url)
