@@ -123,15 +123,27 @@ class SupportTicket(db.Model):
 
 
 def _migrate_schema():
-    """Thêm các cột mới vào bảng đã tồn tại nếu thiếu."""
+    """Thêm các cột mới vào bảng đã tồn tại nếu thiếu.
+
+    Các câu ALTER TABLE phải tương thích cả SQLite lẫn PostgreSQL:
+    - Kiểu thời gian: SQLite dùng DATETIME, PostgreSQL phải dùng TIMESTAMP
+      (nếu không, Postgres báo lỗi 'type "datetime" does not exist').
+    - Mặc định boolean: SQLite dùng 0/1, PostgreSQL cần TRUE/FALSE.
+    """
     from sqlalchemy import inspect, text
+
+    dialect = db.engine.dialect.name
+    is_postgres = dialect in ("postgresql", "postgres")
+    ts_type = "TIMESTAMP" if is_postgres else "DATETIME"
+    false_default = "FALSE" if is_postgres else "0"
+    true_default = "TRUE" if is_postgres else "1"
 
     inspector = inspect(db.engine)
     existing_columns = {col["name"] for col in inspector.get_columns("users")}
 
     # Thêm cột is_admin nếu thiếu
     if "is_admin" not in existing_columns:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0 NOT NULL"))
+        db.session.execute(text(f"ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT {false_default} NOT NULL"))
         db.session.commit()
 
     # Thêm cột credits nếu thiếu
@@ -146,12 +158,12 @@ def _migrate_schema():
 
     # Thêm cột is_active nếu thiếu
     if "is_active" not in existing_columns:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL"))
+        db.session.execute(text(f"ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT {true_default} NOT NULL"))
         db.session.commit()
 
     # Thêm cột last_login nếu thiếu
     if "last_login" not in existing_columns:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN last_login DATETIME"))
+        db.session.execute(text(f"ALTER TABLE users ADD COLUMN last_login {ts_type}"))
         db.session.commit()
 
     # Kiểm tra bảng transactions
@@ -164,7 +176,7 @@ def _migrate_schema():
             db.session.execute(text("ALTER TABLE transactions ADD COLUMN description VARCHAR(255)"))
             db.session.commit()
         if "updated_at" not in tx_columns:
-            db.session.execute(text("ALTER TABLE transactions ADD COLUMN updated_at DATETIME"))
+            db.session.execute(text(f"ALTER TABLE transactions ADD COLUMN updated_at {ts_type}"))
             db.session.commit()
 
     # Kiểm tra bảng support_tickets
@@ -174,7 +186,7 @@ def _migrate_schema():
             db.session.execute(text("ALTER TABLE support_tickets ADD COLUMN admin_reply TEXT"))
             db.session.commit()
         if "updated_at" not in st_columns:
-            db.session.execute(text("ALTER TABLE support_tickets ADD COLUMN updated_at DATETIME"))
+            db.session.execute(text(f"ALTER TABLE support_tickets ADD COLUMN updated_at {ts_type}"))
             db.session.commit()
 
 

@@ -23,11 +23,44 @@ INSTANCE_PATH = os.environ.get(
 # LƯU Ý: nên đặt biến môi trường DATABASE_URL (PostgreSQL) trên Vercel
 # để dữ liệu được lưu vĩnh viễn. SQLite chỉ là fallback (trên Vercel
 # dữ liệu sẽ mất sau mỗi lần cold start vì /tmp là tạm thời).
-DATABASE_URL = os.environ.get(
+def _normalize_db_url(url):
+    """Chuẩn hoá DATABASE_URL để tương thích với psycopg2/libpq.
+
+    - Bỏ khoảng trắng và cặp nháy bao ngoài (lỗi thường gặp khi dán vào
+      Environment Variables trên Vercel:  DATABASE_URL="postgres://...").
+    - Đổi scheme 'postgres://' -> 'postgresql://' (SQLAlchemy yêu cầu).
+    - Loại bỏ tham số '?channel_binding=require' mà Neon tự thêm: libpq
+      đi kèm psycopg2-binary trên Vercel có thể không hỗ trợ tham số này,
+      gây lỗi 'invalid connection option "channel_binding"' làm function
+      crash lúc khởi động (FUNCTION_INVOCATION_FAILED).
+    """
+    if not url:
+        return url
+
+    url = url.strip()
+    # Bỏ nháy đơn/nháy kép bao quanh nếu người dùng vô tình dán vào
+    if len(url) >= 2 and url[0] == url[-1] and url[0] in ("'", '"'):
+        url = url[1:-1].strip()
+
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+
+    if "channel_binding" in url:
+        from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+        parts = urlsplit(url)
+        query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
+                 if k != "channel_binding"]
+        url = urlunsplit((parts.scheme, parts.netloc, parts.path,
+                          urlencode(query), parts.fragment))
+
+    return url
+
+
+DATABASE_URL = _normalize_db_url(os.environ.get(
     "DATABASE_URL",
     # 4 dấu / = đường dẫn tuyệt đối (/tmp/...); 3 dấu / = tương đối
     "sqlite:////tmp/locketgold.db" if IS_VERCEL else "sqlite:///locketgold.db",
-)
+))
 
 # ════════════════════════════════════════════════════════════════════
 # PAYOS (để trống, user sẽ bổ sung API key sau)
