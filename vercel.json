@@ -1,14 +1,8 @@
 {
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index"
-    }
-  ],
   "functions": {
-    "api/index.py": {
+    "app.py": {
       "maxDuration": 60,
-      "includeFiles": "templates/**,static/**"
+      "includeFiles": "{templates,static}/**"
     }
   }
 }

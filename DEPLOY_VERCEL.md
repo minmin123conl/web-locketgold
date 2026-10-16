@@ -55,25 +55,19 @@ Trong Vercel Dashboard → Project → **Settings** → **Environment Variables*
 File `vercel.json` đã được tạo sẵn (dùng **Python native runtime**, không cần legacy `builds`):
 ```json
 {
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index"
-    }
-  ],
   "functions": {
-    "api/index.py": {
-      "runtime": "python3.12",
+    "app.py": {
       "maxDuration": 60,
-      "includeFiles": "templates/**,static/**"
+      "includeFiles": "{templates,static}/**"
     }
   }
 }
 ```
 
 Ghi chú:
-- `runtime: python3.12` — pin phiên bản Python (khớp với `.python-version`).
-- `includeFiles: templates/**,static/**` — đảm bảo Jinja templates và static files được đóng gói khi build.
+- KHÔNG dùng `rewrites` trỏ mọi URL về một function: rewrite sẽ **ghi đè** request path, khiến Flask luôn nhận `PATH_INFO=/api/index` và trả 404 cho mọi route. Để Vercel tự nhận diện WSGI app trong `app.py` tại root — runtime Python mount catch-all và **giữ nguyên** path gốc.
+- `.python-version` (3.12) pin phiên bản Python.
+- `includeFiles: {templates,static}/**` — đảm bảo Jinja templates và static files được đóng gói khi build.
 - File `.vercelignore` giúp **KHÔNG upload** các file nhạy cảm lên Vercel khi `vercel --prod` (key, cert, mobileconfig, creds, .env, moon_state/...).
 
 ## Bước 5: Kiểm tra sau deploy
@@ -110,9 +104,9 @@ Sau khi deploy thành công:
 
 ## Troubleshooting
 
-### Lỗi: `ModuleNotFoundError: No module named 'app'`
-- Kiểm tra `api/index.py` có đúng đường dẫn import
-- Đảm bảo `app.py` nằm cùng cấp với `api/`
+### Lỗi: 404 trên MỌI route (mọi URL trả về như nhau)
+- **Nguyên nhân đã sửa**: `vercel.json` trước đây có `rewrites: /(.*) -> /api/index`. Rewrite ghi đè request path; Flask nhận `PATH_INFO=/api/index` cho mọi URL nên không route nào khớp → 404 toàn bộ (log Vercel hiện `"GET /api/index HTTP/1.1" 404`).
+- **Cách sửa (đã áp dụng)**: bỏ `rewrites`, để Vercel tự nhận diện WSGI app trong `app.py` ở root (catch-all giữ nguyên path gốc). File `api/index.py` không còn cần thiết.
 
 ### Lỗi: `500 FUNCTION_INVOCATION_FAILED` trên MỌI request
 - **Nguyên nhân đã sửa**: trước đây `app.py` gọi `init_db(app)` ở cấp module (lúc **import**). Vercel import entrypoint trong lúc build để tìm WSGI app; nếu lúc đó DB không kết nối được (network bị chặn, Neon chậm, hoặc `DATABASE_URL` còn tham số `?channel_binding=require`), import sẽ ném exception → function không build được → mọi request lỗi 500.
