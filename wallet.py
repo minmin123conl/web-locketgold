@@ -28,8 +28,17 @@ def create_topup_transaction(user_id, amount):
 
 
 def mark_topup_success(order_code):
-    """Đánh dấu transaction nạp tiền thành công (idempotent)."""
-    tx = Transaction.query.filter_by(order_code=order_code, type="topup").first()
+    """Đánh dấu transaction nạp tiền thành công (idempotent).
+
+    Dùng SELECT ... FOR UPDATE để khóa row, tránh trường hợp payOS gửi
+    webhook trùng lặp (retry) đồng thời khiến tiền bị cộng hai lần.
+    """
+    tx = (
+        Transaction.query
+        .filter_by(order_code=order_code, type="topup")
+        .with_for_update()
+        .first()
+    )
     if not tx:
         return None, "Không tìm thấy giao dịch."
     if tx.status == "success":

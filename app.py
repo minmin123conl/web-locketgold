@@ -485,14 +485,24 @@ def payos_webhook():
 
     data = payload.get("data", {})
     order_code = data.get("orderCode")
-    status = data.get("status", "")
 
-    if status == "PAID" and order_code:
-        # PayOS trả orderCode dạng int, cần chuyển sang str để query DB
+    # payOS báo giao dịch thành công bằng payload["success"] == true, KHÔNG
+    # dùng field "status" (không tồn tại trong webhook payOS) — chính vì vậy
+    # trước đây webhook nhận nhưng không cộng tiền, dù đã ghi nhận lịch sử.
+    # data["code"] thường là "00" nhưng có biến thể webhook thiếu field này,
+    # nên chỉ chặn khi nó tồn tại và KHÁC "00".
+    is_paid = payload.get("success") is True and str(data.get("code", "00")) == "00"
+
+    if is_paid and order_code is not None:
+        # mark_topup_success idempotent: gọi lại nhiều lần không cộng trùng.
         tx, error = mark_topup_success(str(order_code))
         if error:
-            return jsonify({"ok": False, "error": error}), 400
+            # Trả 200 để payOS không retry vô hạn với đơn không tồn tại.
+            app.logger.warning("payos webhook: %s (orderCode=%s)", error, order_code)
+        else:
+            app.logger.info("payos webhook: cộng tiền thành công orderCode=%s", order_code)
 
+    # Luôn trả 200 khi chữ ký hợp lệ để payOS ngừng gửi lại.
     return jsonify({"ok": True})
 
 

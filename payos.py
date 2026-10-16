@@ -84,12 +84,57 @@ def create_payment_link(order_code: str, amount: int, description: str, return_u
         return None, f"Lỗi kết nối payOS: {e}"
 
 
+def _serialize_obj(data: dict, null_token: str) -> str:
+    """Tạo chuỗi ký từ một object theo đúng cách payOS SDK làm.
+
+    SDK (JS) sắp xếp key theo alphabet rồi nối `${key}=${value}` bằng '&'.
+    Lưu ý: KHÁC với `_signature()` (dùng cho create payment request, chỉ 5
+    field cố định). Webhook ký trên TOÀN BỘ object `data`.
+    """
+    parts = []
+    for key in sorted(data.keys()):
+        value = data[key]
+        if value is None:
+            value = null_token
+        elif isinstance(value, bool):
+            value = "true" if value else "false"
+        elif isinstance(value, (dict, list)):
+            value = json.dumps(value, separators=(",", ":"), ensure_ascii=False)
+        parts.append(f"{key}={value}")
+    return "&".join(parts)
+
+
+def _signature_from_obj(data: dict, null_token: str) -> str:
+    return hmac.new(
+        PAYOS_CHECKSUM_KEY.encode("utf-8"),
+        _serialize_obj(data, null_token).encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
 def verify_webhook(payload: dict) -> bool:
-    """Verify chữ ký webhook từ payOS."""
+    """Verify chữ ký webhook từ payOS.
+
+    payOS ký HMAC-SHA256 trên object `data` (không phải 5 field như khi
+    tạo payment request). Một số field có thể null; các phiên bản SDK/JSON
+    serialize null khác nhau ('null', rỗng, hoặc bỏ hẳn key) nên thử vài
+    biến thể. An toàn: kẻ tấn công không có checksum key thì không thể tạo
+    được HMAC hợp lệ cho bất kỳ biến thể nào.
+    """
     if not is_configured():
         return False
 
     signature = payload.get("signature", "")
     data = payload.get("data", {})
-    expected = _signature(data)
-    return hmac.compare_digest(signature, expected)
+    if not signature or not isinstance(data, dict) or not data:
+        return False
+
+    candidates = [
+        _signature_from_obj(data, "null"),
+        _signature_from_obj(data, ""),
+    ]
+    # Biến thể: bỏ hẳn các key có giá trị null
+    filtered = {k: v for k, v in data.items() if v is not None}
+    candidates.append(_signature_from_obj(filtered, ""))
+
+    return any(hmac.compare_digest(signature, c) for c in candidates)
