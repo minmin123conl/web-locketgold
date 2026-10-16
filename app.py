@@ -432,7 +432,10 @@ def api_topup():
         return jsonify({"ok": False, "error": error}), 400
 
     tx = create_topup_transaction(user.id, amount)
-    return_url = request.host_url.rstrip("/") + "/vi?status=success"
+    return_url = (
+        request.host_url.rstrip("/")
+        + f"/vi?status=success&order_code={tx.order_code}"
+    )
     cancel_url = request.host_url.rstrip("/") + "/vi?status=cancelled"
 
     checkout_url, error = payos.create_payment_link(
@@ -472,6 +475,42 @@ def api_transactions():
     user = get_current_user()
     transactions = get_transactions(user.id)
     return jsonify({"ok": True, "transactions": [t.to_dict() for t in transactions]})
+
+
+@app.route("/api/wallet/sync", methods=["POST"])
+@login_required
+@csrf_protect
+def api_wallet_sync():
+    """Fallback xác nhận thanh toán khi webhook payOS không tới.
+
+    Khi user quay về từ payOS (returnUrl ?status=success), client gọi endpoint
+    này kèm order_code. Server chủ động hỏi payOS xem đơn đã PAID chưa; nếu
+    rồi thì cộng tiền (idempotent qua mark_topup_success).
+    """
+    user = get_current_user()
+    data = request.get_json(silent=True) or {}
+    order_code = str(data.get("order_code") or "").strip()
+    if not order_code:
+        return jsonify({"ok": False, "error": "Thiếu mã đơn."}), 400
+
+    tx = Transaction.query.filter_by(order_code=order_code, type="topup").first()
+    if not tx or tx.user_id != user.id:
+        return jsonify({"ok": False, "error": "Không tìm thấy giao dịch."}), 404
+
+    if tx.status == "success":
+        return jsonify({"ok": True, "status": "success", "user": user.to_dict()})
+
+    payment_info, error = payos.get_payment_status(order_code)
+    if error:
+        return jsonify({"ok": False, "error": error, "status": tx.status}), 400
+
+    if str(payment_info.get("status", "")).upper() == "PAID":
+        tx, err = mark_topup_success(order_code)
+        if err:
+            return jsonify({"ok": False, "error": err}), 400
+        return jsonify({"ok": True, "status": "success", "user": user.to_dict()})
+
+    return jsonify({"ok": True, "status": tx.status, "user": user.to_dict()})
 
 
 # ════════════════════════════════════════════════════════════════════

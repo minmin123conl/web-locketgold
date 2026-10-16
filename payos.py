@@ -45,6 +45,44 @@ def is_configured() -> bool:
     return bool(PAYOS_CLIENT_ID and PAYOS_API_KEY and PAYOS_CHECKSUM_KEY)
 
 
+def get_payment_status(order_code: str):
+    """Truy vấn trạng thái payment request từ payOS.
+
+    Dùng làm fallback khi webhook không tới (chưa cấu hình URL webhook trên
+    dashboard, hoặc bị timeout): khi user quay về returnUrl, server chủ động
+    hỏi payOS xem đơn đã thanh toán chưa.
+
+    Trả về (payment_info, error):
+    - payment_info: dict dữ liệu payOS (có field "status") nếu thành công
+    - error: thông báo lỗi nếu thất bại
+    """
+    if not is_configured():
+        return None, "Chưa cấu hình payOS."
+
+    headers = {
+        "x-client-id": PAYOS_CLIENT_ID,
+        "x-api-key": PAYOS_API_KEY,
+        "Content-Type": "application/json",
+    }
+    try:
+        resp = requests.get(
+            f"{PAYOS_API_URL}/v2/payment-requests/{order_code}",
+            headers=headers,
+            timeout=15,
+        )
+        # 404 = đơn không tồn tại trên payOS
+        if resp.status_code == 404:
+            return None, "Không tìm thấy đơn trên payOS."
+        resp.raise_for_status()
+        result = resp.json()
+        if result.get("code") == "00":
+            return result.get("data", {}), None
+        return None, result.get("desc", "payOS trả lỗi không xác định.")
+    except requests.RequestException as e:
+        logger.error("payOS get_payment_status error: %s", e)
+        return None, f"Lỗi kết nối payOS: {e}"
+
+
 def create_payment_link(order_code: str, amount: int, description: str, return_url: str, cancel_url: str):
     """Tạo payment link payOS."""
     if not is_configured():
