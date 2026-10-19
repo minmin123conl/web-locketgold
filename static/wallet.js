@@ -19,9 +19,14 @@
     // rồi cộng tiền (idempotent). Không phụ thuộc webhook.
     (async function syncOnReturn() {
         const params = new URLSearchParams(window.location.search);
-        if (params.get("status") !== "success") return;
-        const orderCode = params.get("order_code");
+        // PayOS có thể trả về order_code / orderCode / code, và không phải
+        // lúc nào cũng kèm status=success. Chỉ cần có mã đơn là thử xác nhận;
+        // server sẽ hỏi payOS và chỉ cộng tiền khi đơn thực sự PAID.
+        const status = params.get("status");
+        const orderCode =
+            params.get("order_code") || params.get("orderCode") || params.get("code");
         if (!orderCode) return;
+        if (status === "cancelled" || status === "cancel") return;
 
         let tries = 0;
         const MAX_TRIES = 6;
@@ -36,7 +41,7 @@
                         "Content-Type": "application/json",
                         "X-CSRF-Token": CSRF_TOKEN,
                     },
-                    body: JSON.stringify({ order_code: orderCode }),
+                    body: JSON.stringify({ order_code: orderCode, orderCode: orderCode }),
                 });
                 const data = await res.json();
                 if (data.ok && data.status === "success") {

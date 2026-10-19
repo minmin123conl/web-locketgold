@@ -405,10 +405,59 @@ def logout():
 # ════════════════════════════════════════════════════════════════════
 # WALLET ROUTES
 # ════════════════════════════════════════════════════════════════════
+def _confirm_topup(user, order_code):
+    """Xác nhận 1 giao dịch nạp tiền với payOS và cộng tiền nếu đã PAID.
+
+    Idempotent: mark_topup_success() không cộng trùng. Dùng chung cho
+    /api/wallet/sync và cho việc reconcile ngay khi user quay về /vi.
+    Trả về (tx, error).
+    """
+    tx = Transaction.query.filter_by(order_code=str(order_code), type="topup").first()
+    if not tx or tx.user_id != user.id:
+        return None, "Không tìm thấy giao dịch."
+    if tx.status == "success":
+        return tx, None
+
+    payment_info, error = payos.get_payment_status(str(order_code))
+    if error:
+        return tx, error
+
+    status = str((payment_info or {}).get("status", "")).upper()
+    if status == "PAID":
+        tx, err = mark_topup_success(str(order_code))
+        return tx, err
+    return tx, None
+
+
 @app.route("/vi")
 @login_required
 def wallet_page():
     user = get_current_user()
+
+    # ── Reconcile ngay tại server khi user quay về từ payOS ──────────
+    # PayOS có thể ghi vào returnUrl các tham số tên khác nhau
+    # (order_code, orderCode, code) và có thể không kèm status=success.
+    # Trước đây việc xác nhận chỉ dựa vào JS gọi /api/wallet/sync, nên
+    # nếu JS bị chặn/lỗi mạng hoặc tên param lệch là tiền không vào ví
+    # dù khách đã trả. Giờ server tự xác nhận ngay khi render trang.
+    q = request.args
+    order_code = (
+        q.get("order_code") or q.get("orderCode") or q.get("code") or ""
+    ).strip()
+    if order_code:
+        try:
+            tx, err = _confirm_topup(user, order_code)
+            if tx is not None and tx.status == "success" and not err:
+                flash("Nạp tiền thành công!", "success")
+                # Bỏ các param payOS khỏi URL để refresh không gọi lại.
+                return redirect(url_for("wallet_page"))
+            if err:
+                app.logger.warning(
+                    "reconcile topup orderCode=%s: %s", order_code, err
+                )
+        except Exception:  # không để trang ví sập vì payOS lỗi
+            app.logger.exception("reconcile topup failed orderCode=%s", order_code)
+
     transactions = get_transactions(user.id)
     return render_template("vi.html", user=user, transactions=transactions, CREDIT_PRICE=CREDIT_PRICE)
 
@@ -489,27 +538,20 @@ def api_wallet_sync():
     """
     user = get_current_user()
     data = request.get_json(silent=True) or {}
-    order_code = str(data.get("order_code") or "").strip()
+    # Chấp nhận cả snake_case và camelCase (payOS returnUrl dùng orderCode).
+    order_code = str(
+        data.get("order_code") or data.get("orderCode") or ""
+    ).strip()
     if not order_code:
         return jsonify({"ok": False, "error": "Thiếu mã đơn."}), 400
 
-    tx = Transaction.query.filter_by(order_code=order_code, type="topup").first()
-    if not tx or tx.user_id != user.id:
-        return jsonify({"ok": False, "error": "Không tìm thấy giao dịch."}), 404
-
-    if tx.status == "success":
-        return jsonify({"ok": True, "status": "success", "user": user.to_dict()})
-
-    payment_info, error = payos.get_payment_status(order_code)
+    tx, error = _confirm_topup(user, order_code)
+    if tx is None:
+        return jsonify({"ok": False, "error": error}), 404
     if error:
         return jsonify({"ok": False, "error": error, "status": tx.status}), 400
-
-    if str(payment_info.get("status", "")).upper() == "PAID":
-        tx, err = mark_topup_success(order_code)
-        if err:
-            return jsonify({"ok": False, "error": err}), 400
+    if tx.status == "success":
         return jsonify({"ok": True, "status": "success", "user": user.to_dict()})
-
     return jsonify({"ok": True, "status": tx.status, "user": user.to_dict()})
 
 
