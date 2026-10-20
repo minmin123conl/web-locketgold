@@ -95,3 +95,6 @@ locket-gold/*.key
 locket-gold/*.crt
 locket-gold/*.mobileconfig
 locket-gold/*.service
+
+# Ngoai le: file cau hinh can bundle cho /download/mobileconfig
+!static/locketgold_novpn.mobileconfig

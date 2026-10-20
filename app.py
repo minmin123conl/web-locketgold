@@ -808,16 +808,27 @@ def api_admin_update_ticket(ticket_id):
 
 
 # ════════════════════════════════════════════════════════════════════
-# SERVE CONFIG FILES (từ locket-gold/)
+# SERVE CONFIG FILES (từ static/, được bundle cả local lẫn Vercel)
 # ════════════════════════════════════════════════════════════════════
 @app.route("/download/mobileconfig")
 def download_mobileconfig():
-    """Tải file cấu hình locketgold_novpn.mobileconfig để giữ Gold"""
-    filepath = os.path.join(LOCKET_GOLD_DIR, "locketgold_novpn.mobileconfig")
+    """Tải file cấu hình locketgold_novpn.mobileconfig để giữ Gold.
+
+    File nằm trong static/ để vercel.json bundle được (includeFiles
+    "{templates,static}/**"). Trước đây route đọc từ ../locket-gold —
+    thư mục không có trong repo và không được bundle trên Vercel, dẫn
+    tới 404 JSON và trình duyệt lưu file thành mobileconfig.json.
+    """
+    filepath = os.path.join(HERE, "static", "locketgold_novpn.mobileconfig")
     if not os.path.exists(filepath):
-        return jsonify({"error": "File không tồn tại trên server"}), 404
-    
-    return send_file(filepath, as_attachment=True, download_name="locketgold_novpn.mobileconfig")
+        abort(404)
+
+    return send_file(
+        filepath,
+        as_attachment=True,
+        download_name="locketgold_novpn.mobileconfig",
+        mimetype="application/x-apple-aspen-config",
+    )
 
 
 if __name__ == "__main__":
