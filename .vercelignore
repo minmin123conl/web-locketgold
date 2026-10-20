@@ -28,3 +28,5 @@ logs/
 nohup.out
 test.py
 .vscode/
+# Ngoai le: file cau hinh can bundle cho /download/mobileconfig
+!static/locketgold_novpn.mobileconfig

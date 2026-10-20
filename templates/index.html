@@ -196,9 +196,13 @@
                                 </ol>
                             </div>
                         </div>
-                        <a href="/download/mobileconfig" class="btn btn-download" download>
+                        <!-- Không dùng thuộc tính `download`: trên iOS nó buộc
+                             Safari tải file thay vì mở trình cài đặt profile.
+                             Server trả application/x-apple-aspen-config nên
+                             bấm vào sẽ vào thẳng Settings > Profile đã tải về. -->
+                        <a href="/download/mobileconfig" class="btn btn-download">
                             <span class="btn-icon">⬇️</span>
-                            <span class="btn-text">Tải File Cấu Hình</span>
+                            <span class="btn-text">Cài File Cấu Hình</span>
                         </a>
                     </div>
                 </div>

@@ -823,9 +823,11 @@ def download_mobileconfig():
     if not os.path.exists(filepath):
         abort(404)
 
+    # `inline` để iOS/Safari nhận diện profile và mở trực tiếp màn hình
+    # Cài Đặt > Hồ Sơ. `attachment` khiến Safari chỉ tải file xuống.
     return send_file(
         filepath,
-        as_attachment=True,
+        as_attachment=False,
         download_name="locketgold_novpn.mobileconfig",
         mimetype="application/x-apple-aspen-config",
     )
